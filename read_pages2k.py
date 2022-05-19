@@ -62,7 +62,8 @@ for file in os.listdir(directory):
             'paleoData_units',
             'paleoData_values',
             'paleoData_proxy',
-            'netCDF_meanLat'], data = [m_l])
+            'netCDF_meanLat',
+            'netCDF_meanLon'], data = [m_l])
 
           print(filename)
 
