@@ -5,23 +5,10 @@ import sys
 import pandas as pd
 
 in_dir = sys.argv[1]
-netCDF = sys.argv[2]
-res_file = sys.argv[3]
+res_file = sys.argv[2]
 
 if os.path.isfile(res_file):
     os.remove(res_file)
-
-nci = netCDF4.Dataset(netCDF)
-
-def geo_idx(dd, dd_array):
-   """
-     search for nearest decimal degree in an array of decimal degrees and return the index.
-     np.argmin returns the indices of minium value along an axis.
-     so subtract dd from all values in dd_array, take absolute value and find index of minium.
-    """
-   geo_idx = (np.abs(dd_array - dd)).argmin()
-   return geo_idx
-
 
 directory = os.fsencode(in_dir)
     
@@ -47,18 +34,8 @@ for file in os.listdir(directory):
 
 
         if c_val == 1:
-
-          lats = nci.variables['lat'][:]
-          lons = nci.variables['lon'][:]
-
-          lat_idx = geo_idx(in_lat, lats)
-          lon_idx = geo_idx(in_lon, lons)
-
-          netCDF_lats = lats[lat_idx]
-          netCDF_lons = lons[lon_idx]
-
+            
           df = pd.read_table(in_dir + '/' + filename, comment='#', header = 0, delim_whitespace=True)
-
 
           m_l = [filename.replace(".txt", ""),
           filename.replace(".txt", ""),
@@ -71,9 +48,7 @@ for file in os.listdir(directory):
           'trsgi',
           None,
           df["trsgi"].values,
-          'TRW',
-          netCDF_lats,
-          netCDF_lons]
+          'TRW']
 
           year_trsgi = pd.DataFrame(columns = ['paleoData_pages2kID',
             'dataSetName',
@@ -87,8 +62,7 @@ for file in os.listdir(directory):
             'paleoData_units',
             'paleoData_values',
             'paleoData_proxy',
-            'netCDF_meanLat',
-            'netCDF_meanLon'], data = [m_l])
+            'netCDF_meanLat'], data = [m_l])
 
           print(filename)
 
