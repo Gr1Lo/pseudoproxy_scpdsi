@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import pickle
 import xarray as xr
+from pyEOF import *
 from sklearn import linear_model
 import numpy as np
 import nc_time_axis
@@ -64,3 +65,53 @@ def r_execel(f_path, drop_val = 2):
     res = np.transpose(mat)
 
     return res
+
+
+
+def r_netCDF(f_path, min_lon = -145, min_lat = 14, max_lon = -52, max_lat = 71, swap = 0, force0toNan = False):
+    '''
+    Формирование таблицы по годам из netCDF с индексами scpdsi
+    '''
+
+    ds0 = xr.open_dataset(f_path)
+    ds = ds0["scpdsi"]
+    n_time = ds0["time"]
+
+    coor = [] 
+    for key in ds.coords.keys():
+      if key in ('lon','longitude'):
+        coor.append(key)
+    for key in ds.coords.keys():
+      if key in ('lat','latitude'):
+        coor.append(key)
+    
+    #Выбор территории анализа
+    mask_lon = (ds.coords[coor[0]] >= min_lon) & (ds.coords[coor[0]] <= max_lon)
+    mask_lat = (ds.coords[coor[1]] >= min_lat) & (ds.coords[coor[1]] <= max_lat)
+
+    ret_lon = ds.coords[coor[0]][mask_lon]
+    ret_lat = ds.coords[coor[1]][mask_lat]
+
+    ds_n = ds.where(mask_lon & mask_lat, drop=True)
+    df_nn = ds_n.to_dataframe().reset_index()
+    if force0toNan:
+      df_nn[df_nn==0] = np.nan
+
+    df_nn['month'] = np.repeat(n_time.dt.month, len(df_nn)/len(n_time.dt.month))
+    df_nn['year'] = np.repeat(n_time.dt.year, len(df_nn)/len(n_time.dt.year))
+
+    #Используется информация только по летним месяцам
+
+    df_nn0 = df_nn[(df_nn['month'] < 9)&(df_nn['month'] > 5)]
+    grouped_df = df_nn0.groupby([coor[1], coor[0] ,df_nn0['year']])
+    mean_df = grouped_df.mean()
+    mean_df = mean_df.reset_index()
+
+    if swap == 0:
+      mean_df = mean_df[['year', coor[1], coor[0], 'scpdsi']]
+      df_data = get_time_space(mean_df, time_dim = "year", lumped_space_dims = [coor[1],coor[0]])
+    else:
+      mean_df = mean_df[['year', coor[0], coor[1], 'scpdsi']]
+      df_data = get_time_space(mean_df, time_dim = "year", lumped_space_dims = [coor[0],coor[1]])
+
+    return df_data, ds_n, ret_lon, ret_lat
