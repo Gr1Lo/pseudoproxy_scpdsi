@@ -68,13 +68,13 @@ def r_execel(f_path, drop_val = 2):
 
 
 
-def r_netCDF(f_path, min_lon = -145, min_lat = 14, max_lon = -52, max_lat = 71, swap = 0, force0toNan = False):
+def r_netCDF(f_path, var_name, min_lon = -145, min_lat = 14, max_lon = -52, max_lat = 71, swap = 0, force0toNan = False):
     '''
     Формирование таблицы по годам из netCDF с индексами scpdsi
     '''
 
     ds0 = xr.open_dataset(f_path)
-    ds = ds0["scpdsi"]
+    ds = ds0[var_name]
     n_time = ds0["time"]
 
     coor = [] 
