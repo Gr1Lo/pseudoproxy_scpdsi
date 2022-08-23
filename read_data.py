@@ -114,7 +114,7 @@ def r_netCDF(f_path, var_name = 'scpdsi', min_lon = -145, min_lat = 14, max_lon 
       mean_df = mean_df[['year', coor[0], coor[1], var_name]]
       df_data = get_time_space(mean_df, time_dim = "year", lumped_space_dims = [coor[0],coor[1]])
 
-    return df_data, ds_n, ret_lon, ret_lat
+    return df_data, ds_n, ret_lon, ret_lat, coor
 
 
 def open_nc(df,
