@@ -108,3 +108,82 @@ def plot_pseudo_corr_real(new_df, lons, lats, vsl_pseudo, lat_lon_list_vsl, l_w)
     cbar=fig.colorbar(pcm,cax=axs[1], extend='both', orientation='horizontal', ticks=[0,0.1,0.2,0.5,1])
     cbar.set_label('corr_spearman', fontsize=20)
     fig.suptitle('Значения корреляции реальных и псведо- прокси', fontsize=25)
+
+    
+    
+def match_point_grid_1000(vsl_1000, lat_lon_list_1000, lons, lats, st_year=850):
+  t_arr = []
+  cou_year = 0
+  for i in vsl_1000:
+    c_year = st_year + cou_year
+    lat_lon = lat_lon_list_1000[cou_year]
+    ages = list(range(st_year,st_year+1000))
+    ages = pd.Series(ages)
+    i_s = pd.Series(i)
+    t_arr.append([lats.values[lat_lon[0]],lons.values[lat_lon[1]], ages, i_s])
+    cou_year += 1
+
+  df_vsl_1000 = pd.DataFrame(columns = ['geo_meanLat',
+                  'geo_meanLon',
+                  'ages',
+                  'trsgi'], data = np.array(t_arr))
+  
+  return df_vsl_1000
+
+
+def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'):
+    pseudo_p_arr = []
+    a = np.empty((len(lats),len(lons),))
+    a[:] = np.nan
+
+    for ite in range(len(new_df)):
+            real_trsgi = new_df.iloc[ite]['trsgi'].values
+            real_ages = new_df.iloc[ite]['ages'].values
+            df0 = pd.DataFrame(columns = ['trsgi',
+                  'ages'], data = np.array([real_trsgi, real_ages]).T)
+            
+
+            #поиск ближайших координат в сетке
+            lat_ind = (np.abs(new_df['geo_meanLat'].values[ite] - lats.values)).argmin()
+            lon_ind = (np.abs(new_df['geo_meanLon'].values[ite] - lons.values)).argmin()
+
+            df1 = grid_df[(grid_df.lat == lats[lat_ind]) & (grid_df.lon == lons[lon_ind])]
+
+            merge_df = df1.merge(df0, left_on='year', right_on='ages')
+
+            #рандомные значения шума разного цвета
+            wn = cn.powerlaw_psd_gaussian(0, len(merge_df[var_name].values))
+            va_std = np.std(merge_df[var_name].values)
+
+
+            if corr is None:
+              pseudo_p = merge_df['trsgi'].values
+            else:
+              #стандартизация по snr по аналогии с Feng Zhu
+              snr = np.abs(corr)/((1-corr**2)**0.5) 
+              noise_std = va_std/snr
+              wn_snr = noise_std * wn
+              pseudo_p = merge_df[var_name].values + wn_snr
+
+            corr_s = scipy.stats.spearmanr(merge_df[var_name].values,pseudo_p)[0]
+
+            if ~np.isnan(corr_s):
+              pseudo_p_arr.append(pseudo_p)
+
+            if ~np.isnan(corr_s) & (np.isnan(a[lat_ind,lon_ind]) or a[lat_ind,lon_ind] < corr_s):
+              a[lat_ind,lon_ind]=corr_s
+
+    if corr is not None:
+          ttl = ttl + '\n(corr = ' + str(corr) + ')'
+    else:
+          ttl = ttl + ' (vsl)' 
+
+    fig, axs = plt.subplots(figsize=(15, 10), nrows=2,gridspec_kw={'height_ratios': [20,1.5]},constrained_layout=True)
+    pcm=axs[0].pcolormesh(lons,lats,a,cmap='tab20b', vmin =-0.25, vmax=0.8)
+    cbar=fig.colorbar(pcm,cax=axs[1], extend='both', orientation='horizontal', ticks=[-0.2,0,0.1,0.2,0.5, 0.75, 1])
+    cbar.set_label('corr_spearman', fontsize=20)
+    fig.suptitle(ttl, fontsize=25)
+
+    return np.array(pseudo_p_arr)
+  
+  
