@@ -562,7 +562,7 @@ def plot_RNN_model(vsl_1000_pc, t_df, scpdsi_pcs_CMIP6_1_v,
                    scpdsi_eigvals_CMIP6_1_v, scpdsi_pca_CMIP6_1_v,
                    scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1,
                    use_w,
-                   ttl):
+                   ttl, p_type = 'corr'):
   
     p_v = 0.2
     nums = np.ones(len(vsl_1000_pc))
@@ -592,7 +592,7 @@ def plot_RNN_model(vsl_1000_pc, t_df, scpdsi_pcs_CMIP6_1_v,
                     unord_eigvals, 
                     scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1, 
                     ttl + "\n", 
-                    'corr',
+                    p_type = 'corr',
                     scale_type = 2,
                     orig_pcs=True)
 
