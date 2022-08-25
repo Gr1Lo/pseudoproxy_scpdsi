@@ -3,6 +3,7 @@ import scipy
 import pandas as pd
 from matplotlib import pyplot as plt
 import netCDF4 as nc4
+import colorednoise as cn
 
 
 
