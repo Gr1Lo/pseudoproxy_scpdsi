@@ -509,10 +509,10 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, ds_n, ttl, p_type='diff', scale
             else:
               mae_ar.append(np.nan)
               
-            ttl_str = '; mean absolute error = '
-            loss0 = np.array(mae_ar)
-            vmin = 0
-            vmax = 8
+          ttl_str = '; mean absolute error = '
+          loss0 = np.array(mae_ar)
+          vmin = 0
+          vmax = 8
 
         elif p_type == 'nse':
           nse_ar = []
