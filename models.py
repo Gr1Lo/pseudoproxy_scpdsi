@@ -557,7 +557,7 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, ds_n, ttl, p_type='diff', scale
       
       
       
-def plot_RNN_model(vsl_1000_pc, scpdsi_pcs_CMIP6_1_v,
+def plot_RNN_model(vsl_1000_pc, t_df, scpdsi_pcs_CMIP6_1_v,
                    scpdsi_evfs_CMIP6_1_v, scpdsi_eofs_CMIP6_1_v, 
                    scpdsi_eigvals_CMIP6_1_v, scpdsi_pca_CMIP6_1_v,
                    scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1,
