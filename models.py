@@ -554,3 +554,52 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, ds_n, ttl, p_type='diff', scale
         plt.show()
 
         return loss0
+      
+      
+      
+ def plot_RNN_model(vsl_1000_pc, scpdsi_pcs_CMIP6_1_v,
+                   scpdsi_evfs_CMIP6_1_v, scpdsi_eofs_CMIP6_1_v, 
+                   scpdsi_eigvals_CMIP6_1_v, 
+                                          scpdsi_pca_CMIP6_1_v,
+                   scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1,
+                   use_w,
+                   ttl):
+  
+    p_v = 0.2
+    nums = np.ones(len(vsl_1000_pc))
+    nums[:int(len(vsl_1000_pc)*p_v)] = 0
+
+    #np.random.shuffle(nums)
+    mask = 1 == nums
+    m_mask = np.array(mask)
+
+    print('\n' + ttl + '\n')
+    inverse_te_l, inverse_est = run_model(scpdsi_pcs_CMIP6_1_v, vsl_1000_pc, 
+                                          scpdsi_evfs_CMIP6_1_v, scpdsi_eofs_CMIP6_1_v, 
+                                          scpdsi_eigvals_CMIP6_1_v, 
+                                          scpdsi_pca_CMIP6_1_v, 
+                                          2, 
+                                          'RNN', 
+                                          use_w=use_w, 
+                                          m_mask=m_mask)
+
+    inv_rotmat = np.linalg.inv(scpdsi_pca_CMIP6_1_v.rotmat_)
+    unord = inverse_est[:,np.argsort(scpdsi_pca_CMIP6_1_v.order.ravel())]
+    unord_eofs = scpdsi_eofs_CMIP6_1_v.to_numpy()[np.argsort(scpdsi_pca_CMIP6_1_v.order.ravel())]
+    unord_eigvals = scpdsi_eigvals_CMIP6_1_v[np.argsort(scpdsi_pca_CMIP6_1_v.order.ravel())]
+
+    loss0 = rev_diff(np.dot(unord,inv_rotmat), t_df.to_numpy()[~m_mask][1:], 
+                    np.dot(unord_eofs.T,inv_rotmat).T, 
+                    unord_eigvals, 
+                    scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1, 
+                    ttl + "\n", 
+                    'corr',
+                    scale_type = 2,
+                    orig_pcs=True)
+
+    plt.figure(figsize = (19,10))
+    plt.plot(inverse_te_l[:,0][1:],label='True')
+    plt.plot(inverse_est[:,0][1:],label='est')
+    plt.legend()
+    plt.suptitle('Реальные и предсказанные значения первой компоненты')
+    plt.show()
