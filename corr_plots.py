@@ -56,7 +56,7 @@ def match_point_grid(df,
   
   
   
- def plot_corr_points(corr_tab, nc_summer, lons, lats, ttl,
+def plot_corr_points(corr_tab, nc_summer, lons, lats, ttl,
                     latbounds = [ 14 , 71 ],
                     lonbounds = [ -145 , -52 ],
                     vmin =-7, vmax=30):
