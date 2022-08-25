@@ -499,12 +499,20 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, ds_n, ttl, p_type='diff', scale
           vmax = 1
 
         elif p_type == 'mae':
-          loss0 = np.abs(u - u0)
-          loss0 = np.where(loss0>50, np.nan, loss0)
-          loss0 = np.mean(loss0,axis=0)
-          ttl_str = '; mean absolute error = '
-          vmin = 0
-          vmax = 8
+          mae_ar = []
+          for i in range(u0.shape[1]):
+            i1 = u[:,i]
+            i0 = u0[:,i]
+            if ~np.isnan(i0[0]):
+              mae2 = np.mean(np.abs(u - u0))
+              mae_ar.append(mae2)
+            else:
+              mae_ar.append(np.nan)
+              
+            ttl_str = '; mean absolute error = '
+            loss0 = np.array(mae_ar)
+            vmin = 0
+            vmax = 8
 
         elif p_type == 'nse':
           nse_ar = []
