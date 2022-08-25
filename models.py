@@ -592,7 +592,7 @@ def plot_RNN_model(vsl_1000_pc, t_df, scpdsi_pcs_CMIP6_1_v,
                     unord_eigvals, 
                     scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1, 
                     ttl + "\n", 
-                    p_type = 'corr',
+                    p_type = p_type,
                     scale_type = 2,
                     orig_pcs=True)
 
