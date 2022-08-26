@@ -504,7 +504,7 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, ds_n, ttl, p_type='diff', scale
             i1 = u[:,i]
             i0 = u0[:,i]
             if ~np.isnan(i0[0]):
-              mae2 = np.mean(np.abs(u - u0))
+              mae2 = np.mean(np.abs(i1 - i0))
               mae_ar.append(mae2)
             else:
               mae_ar.append(np.nan)
