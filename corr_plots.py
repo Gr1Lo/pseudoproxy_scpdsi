@@ -187,11 +187,10 @@ def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'
           ttl = ttl + ' (vsl)' 
 
     fig, axs = plt.subplots(figsize=(15, 10), nrows=2,gridspec_kw={'height_ratios': [20,1.5]},constrained_layout=True)
-    pcm=axs[0].pcolormesh(lons,lats,a,cmap='tab20b', vmin =-0.25, vmax=0.8)
-    cbar=fig.colorbar(pcm,cax=axs[1], extend='both', orientation='horizontal', ticks=[-0.75, -0.5,-0.2,0,0.1,0.2,0.5, 0.75, 1])
+    pcm=axs[0].pcolormesh(lons,lats,a,cmap='tab20b', vmin =-1, vmax=1)
+    cbar=fig.colorbar(pcm,cax=axs[1], extend='both', orientation='horizontal', ticks=[-0.75, -0.5,-0.25,0,0.25,0.5, 0.75, 1])
     cbar.set_label('corr_spearman', fontsize=20)
     fig.suptitle(ttl, fontsize=25)
 
     return np.array(pseudo_p_arr)
-  
   
