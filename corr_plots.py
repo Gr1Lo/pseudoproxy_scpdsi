@@ -132,7 +132,8 @@ def match_point_grid_1000(vsl_1000, lat_lon_list_1000, lons, lats, st_year=850):
   return df_vsl_1000
 
 
-def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'):
+def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi',
+              grid_df2 = None, var_name2 = None):
     pseudo_p_arr = []
     a = np.empty((len(lats),len(lons),))
     a[:] = np.nan
@@ -140,17 +141,20 @@ def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'
     for ite in range(len(new_df)):
             real_trsgi = new_df.iloc[ite]['trsgi'].values
             real_ages = new_df.iloc[ite]['ages'].values
-            df0 = pd.DataFrame(columns = ['trsgi',
-                  'ages'], data = np.array([real_trsgi, real_ages]).T)
             
-
             #поиск ближайших координат в сетке
             lat_ind = (np.abs(new_df['geo_meanLat'].values[ite] - lats.values)).argmin()
             lon_ind = (np.abs(new_df['geo_meanLon'].values[ite] - lons.values)).argmin()
 
             df1 = grid_df[(grid_df.lat == lats[lat_ind]) & (grid_df.lon == lons[lon_ind])]
 
-            merge_df = df1.merge(df0, left_on='year', right_on='ages')
+            if grid_df2 is None:
+              df0 = pd.DataFrame(columns = ['trsgi',
+                    'ages'], data = np.array([real_trsgi, real_ages]).T)
+              merge_df = df1.merge(df0, left_on='year', right_on='ages')
+            else:
+              df2 = grid_df2[(grid_df2.lat == lats[lat_ind]) & (grid_df2.lon == lons[lon_ind])]
+              merge_df = df1.merge(df2, left_on='year', right_on='year')
 
             #рандомные значения шума разного цвета
             wn = cn.powerlaw_psd_gaussian(0, len(merge_df[var_name].values))
@@ -166,7 +170,10 @@ def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'
               wn_snr = noise_std * wn
               pseudo_p = merge_df[var_name].values + wn_snr
 
-            corr_s = scipy.stats.spearmanr(merge_df[var_name].values,pseudo_p)[0]
+            if grid_df2 is None:
+              corr_s = scipy.stats.spearmanr(merge_df[var_name].values,pseudo_p)[0]
+            else:
+              corr_s = scipy.stats.spearmanr(merge_df[var_name2].values,pseudo_p)[0]
 
             if ~np.isnan(corr_s):
               pseudo_p_arr.append(pseudo_p)
