@@ -64,7 +64,7 @@ def plot_corr_points(corr_tab, nc_summer, lons, lats, ttl,
     
     
 
-    fig, axs = plt.subplots(figsize=(15, 10), nrows=2,ncols=2,gridspec_kw={'height_ratios': [20,1.5],'width_ratios': [20,1]},constrained_layout=True)
+    fig, axs = plt.subplots(figsize=(15, 15), nrows=2,ncols=2,gridspec_kw={'height_ratios': [20,1.5],'width_ratios': [20,1]},constrained_layout=True)
     pcm=axs[0][0].pcolormesh(lons,lats,np.mean(nc_summer, axis=0),cmap='viridis', vmin = vmin, vmax=vmax)
     axs[0][0].set_xlim(left=lonbounds[0], right=lonbounds[1])
     axs[0][0].set_ylim(bottom=latbounds[0], top=latbounds[1])
