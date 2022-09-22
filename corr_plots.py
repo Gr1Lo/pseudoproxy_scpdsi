@@ -44,7 +44,8 @@ def match_point_grid(df,
               corr_s = scipy.stats.spearmanr(merge_df[var_name].values,merge_df['trsgi'].values)[0]
               lat_lon_list.append([tr_lat_ind, tr_lon_ind])
 
-              tab_arr.append([df_t['lat'].values[0],df_t['lon'].values[0], corr_s, df_t['age'], df_t['trsgi']])
+              if not np.isnan(corr_s):
+                tab_arr.append([df_t['lat'].values[0],df_t['lon'].values[0], corr_s, df_t['age'], df_t['trsgi']])
 
     corr_tab = pd.DataFrame(columns = ['geo_meanLat',
                 'geo_meanLon',
@@ -53,6 +54,7 @@ def match_point_grid(df,
                 'trsgi'], data = np.array(tab_arr))
     
     return corr_tab
+
   
   
   
