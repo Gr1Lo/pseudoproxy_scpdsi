@@ -6,7 +6,6 @@ import netCDF4 as nc4
 import colorednoise as cn
 
 
-
 def match_point_grid(df, 
                              grid_df, 
                              var_name,
@@ -23,14 +22,18 @@ def match_point_grid(df,
     for fn in (df['file_name'].unique()):
       df_t = df[df['file_name']==fn]
       df_t = df_t[df_t['age'].isin(grid_df['year'].unique())]
-
       if len(df_t)>0: 
         cou+=1
         if ((df_t['lat'].values[0] >= min_lat) & (df_t['lat'].values[0] <= max_lat) 
         & (df_t['lon'].values[0] >= min_lon) & (df_t['lon'].values[0] <= max_lon)):
 
-          tr_lat_ind = (np.abs(df_t['lat'].values[0] - tr_ret_lat.values)).argmin()
-          tr_lon_ind = (np.abs(df_t['lon'].values[0] - tr_ret_lon.values)).argmin()
+          if isinstance(tr_ret_lat, pd.DataFrame):
+            tr_lat_ind = (np.abs(df_t['lat'].values[0] - tr_ret_lat.values)).argmin()
+            tr_lon_ind = (np.abs(df_t['lon'].values[0] - tr_ret_lon.values)).argmin()
+          else:
+            tr_lat_ind = (np.abs(df_t['lat'].values[0] - tr_ret_lat)).argmin()
+            tr_lon_ind = (np.abs(df_t['lon'].values[0] - tr_ret_lon)).argmin()
+
 
           if 1:#[tr_lat_ind, tr_lon_ind] not in lat_lon_list:
 
@@ -54,7 +57,6 @@ def match_point_grid(df,
                 'trsgi'], data = np.array(tab_arr))
     
     return corr_tab
-
   
   
   
