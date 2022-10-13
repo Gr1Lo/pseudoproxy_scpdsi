@@ -86,7 +86,7 @@ def r_netCDF(f_path, var_name = 'scpdsi', min_lon = -145, min_lat = 14, max_lon 
         coor.append(key)
     
     #Выбор территории анализа
-    ds.coords[coor[0]] = np.where(ds.coords[coor[0]]>180, ds.coords[coor[0]]-360, ds.coords[coor[0]])
+    #ds.coords[coor[0]] = np.where(ds.coords[coor[0]]>180, ds.coords[coor[0]]-360, ds.coords[coor[0]])
     mask_lon = (ds.coords[coor[0]] >= min_lon) & (ds.coords[coor[0]] <= max_lon)
     mask_lat = (ds.coords[coor[1]] >= min_lat) & (ds.coords[coor[1]] <= max_lat)
 
