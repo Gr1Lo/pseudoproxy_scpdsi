@@ -150,7 +150,7 @@ def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'
             lat_ind = (np.abs(new_df['geo_meanLat'].values[ite] - lats.values)).argmin()
             lon_ind = (np.abs(new_df['geo_meanLon'].values[ite] - lons.values)).argmin()
 
-            df1 = grid_df[(grid_df.lat == lats[lat_ind]) & (grid_df.lon == lons[lon_ind])]
+            df1 = grid_df[(grid_df.geo_meanLat == lats[lat_ind]) & (grid_df.geo_meanLon == lons[lon_ind])]
 
             if grid_df2 is None:
               df0 = pd.DataFrame(columns = ['trsgi',
