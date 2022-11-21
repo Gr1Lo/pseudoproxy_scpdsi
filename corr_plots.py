@@ -157,7 +157,7 @@ def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'
                     'ages'], data = np.array([real_trsgi, real_ages]).T)
               merge_df = df1.merge(df0, left_on='year', right_on='ages')
             else:
-              df2 = grid_df2[(grid_df2.lat == lats[lat_ind]) & (grid_df2.lon == lons[lon_ind])]
+              df2 = grid_df2[(grid_df2.geo_meanLat == lats[lat_ind]) & (grid_df2.geo_meanLon == lons[lon_ind])]
               merge_df = df1.merge(df2, left_on='year', right_on='year')
 
             #рандомные значения шума разного цвета
