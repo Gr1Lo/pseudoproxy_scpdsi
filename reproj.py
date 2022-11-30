@@ -11,6 +11,7 @@ from sys import getsizeof
 import rasterio as rs
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 from matplotlib import pyplot
+from pyproj import Proj, Transformer
 
 
 def reproj_raster(orig_path, var_summer, var_name, lats_tmp, lons_tmp):
