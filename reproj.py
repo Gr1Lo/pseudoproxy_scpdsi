@@ -136,3 +136,16 @@ def reproj_raster(orig_path, var_summer, var_name, lats_tmp, lons_tmp):
         res_tab.loc[(res_tab['lat']==check_lat) & (res_tab['lon']==check_lon), var_name] = np.nan
 
     return res_tab              
+
+
+def reproj_points(df, lat_var = 'lat', lon_var = 'lon'):
+  m_df = df.copy()
+  transformer = Transformer.from_crs("EPSG:4326", 'ESRI:102010')
+
+  for i, row in m_df.iterrows():
+    x1,y1 = m_df.at[i,lat_var], m_df.at[i,lon_var]
+    x2,y2 = transformer.transform(x1,y1)
+    m_df.at[i, lon_var] = x2
+    m_df.at[i, lat_var] = y2
+
+  return m_df
