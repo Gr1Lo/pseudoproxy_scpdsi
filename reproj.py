@@ -14,7 +14,7 @@ from matplotlib import pyplot
 from pyproj import Proj, Transformer
 
 
-def reproj_raster(orig_path, var_summer, var_name, lats_tmp, lons_tmp):
+def reproj_raster(orig_path, var_summer, var_name, lats_tmp, lons_tmp, swap_minus = False):
     st_year = var_summer.index.values.min()
     '''var_summer_s = var_summer.set_index(['year']+[coor0_tmp[0],coor0_tmp[1]])
     var_summer_s = var_summer_s.unstack([coor0_tmp[0],coor0_tmp[1]]).to_numpy()'''
@@ -48,6 +48,12 @@ def reproj_raster(orig_path, var_summer, var_name, lats_tmp, lons_tmp):
     uly = max(lats_tmp.values)
     lrx = max(lons_tmp.values)
     lry = min(lats_tmp.values)
+    
+    if swap_minus:
+        l_arr = lats_tmp.values
+        l_arr = np.where(l_arr<0, l_arr+360, l_arr)
+        uly = max(l_arr)
+        lry = min(l_arr)
 
     src = gdal.Translate(os.path.dirname(orig_path) + '/' + 'cropped.tif', n_path, 
                    projWin=[ulx, uly, lrx, lry])
