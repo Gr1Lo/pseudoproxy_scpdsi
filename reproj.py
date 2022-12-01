@@ -50,10 +50,10 @@ def reproj_raster(orig_path, var_summer, var_name, lats_tmp, lons_tmp, swap_minu
     lry = min(lats_tmp.values)
     
     if swap_minus:
-        l_arr = lats_tmp.values
+        l_arr = lons_tmp.values
         l_arr = np.where(l_arr<0, l_arr+360, l_arr)
-        uly = max(l_arr)
-        lry = min(l_arr)
+        ulx = min(l_arr)
+        lrx = max(l_arr)
 
     src = gdal.Translate(os.path.dirname(orig_path) + '/' + 'cropped.tif', n_path, 
                    projWin=[ulx, uly, lrx, lry])
