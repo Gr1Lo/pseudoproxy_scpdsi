@@ -83,7 +83,7 @@ def plot_corr_points(corr_tab, nc_summer, lons, lats, ttl,
     
     nc_summer0 = nc_summer.set_index(['year']+['lon','lat'])
     nc_summer_s = nc_summer0.unstack(['lon','lat']).to_numpy()
-    nc_summer_s = nc_summer_s.reshape([nc_summer_s.shape[0],len(sort_lat_tmp),len(sort_lon_tmp)])
+    nc_summer_s = nc_summer_s.reshape([nc_summer_s.shape[0],len(lats),len(lons)])
     #m_mean = np.mean(nc_summer, axis=0)
 
     pcm = axs[0][0].pcolormesh(lons,lats,np.mean(nc_summer_s, axis=0),cmap='viridis', vmin = vmin, vmax=vmax)
