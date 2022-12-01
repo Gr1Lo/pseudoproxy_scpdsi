@@ -52,13 +52,13 @@ def train_and_test(trsgi, labels, p_v, keep_order = False, m_mask=None):
 
 #функция формирования тренировочного набора для RNN
 def make_x_y(ts, data):
-    """
+    '''
     Parameters
     ts : число шагов для RNN
     data : numpy array с предикторами
     x - наборы предикторов, в том числе и с предыдущих шагов
     y - предикторы только с действующего шага
-    """
+    '''
     x, y = [], []
     offset = 0
     for i in data:
@@ -163,7 +163,7 @@ def corr_loss(x, y):
 
 def simp_net_regression_1(trsgi_values, resp, ttl, model, shuffle_b, evfs = None, 
                           eofs = None, eigvals = None, pca = None, scale_type=2,
-                          use_w=False, min_delta = 0.0001):
+                          use_w=False, min_delta = 0.001):
 
     '''
     Запуск обучения модели регрессии
@@ -187,7 +187,7 @@ def simp_net_regression_1(trsgi_values, resp, ttl, model, shuffle_b, evfs = None
     all_arr = np.asarray(all_arr)
     
     if use_w=='full':
-      model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
+      model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0005),
                   run_eagerly=True,
                   loss = m_loss_func_weight_f(l_evfs=evfs,
                                               l_eofs = eofs, 
@@ -206,16 +206,17 @@ def simp_net_regression_1(trsgi_values, resp, ttl, model, shuffle_b, evfs = None
 
     if shuffle_b:
       trsgi_values, all_arr = shuffle(trsgi_values, all_arr)
-      callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, min_delta=min_delta)
+      callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, min_delta=min_delta)
       v_s = 0.2
     
     else:
       trsgi_values, y = make_x_y(1, trsgi_values)
-      callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, min_delta=min_delta)
+      #trsgi_values = np.reshape(trsgi_values, (trsgi_values.shape[0],1,trsgi_values.shape[1]))
+      callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, min_delta=0.001)
       v_s = 0.2
       all_arr = all_arr[1:]
+
       
-    #x_train, x_val, y_train, y_val = train_test_split(trsgi_values, all_arr, test_size=0.2, shuffle=shuffle_b)
     history = model.fit(trsgi_values,
                             all_arr,
                             verbose=0,
@@ -229,32 +230,7 @@ def simp_net_regression_1(trsgi_values, resp, ttl, model, shuffle_b, evfs = None
     return model, history
 
 
-def get_model_regression_1(n_inputs, n_outputs, use_drop = False, use_batch_norm = False):
 
-  '''
-  Описание сети для задачи регрессии
-  n_inputs - число предикторов,
-  n_outputs - количество предсказываемых значений, по умоляанию 1
-  use_drop - параметр, отвечающий за рандомное отключение доли нейронов (30%)
-  use_batch_norm - параметр, отвечающий за использование batch-нормализации
-  '''
-
-  model = Sequential()
-  dr_v = 0.5
-  use_batch_norm = True
-
-  model.add(Dense(50, input_dim=n_inputs, kernel_initializer='normal', activation='linear',
-                  kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
-                  bias_regularizer=regularizers.L2(1e-4),
-                  activity_regularizer=regularizers.L2(1e-5)))
-  '''if use_batch_norm == True:
-    model.add(BatchNormalization())'''
-  if use_drop == True:
-    model.add(Dropout(dr_v))
-
-
-  model.add(Dense(n_outputs, kernel_initializer='he_uniform'))
-  return model
 
 
 
@@ -269,8 +245,14 @@ def d_index(targets,predictions):
 
 
 
-def run_model(pcs_CMIP6_1, vsl_1000_pc, 
-              evfs_CMIP6_1, eofs_CMIP6_1, eigvals_CMIP6_1, pca_CMIP6_1, scale_type=2,
+def run_model(vsl_1000_pc_tr, 
+              vsl_1000_pc_test, 
+              pcs_tr,
+              evfs_tr, 
+              eofs_tr, 
+              eigvals_tr, 
+              pca_tr_v, 
+              scale_type=2,
               type_m='NN', use_w=False, m_mask = None):
       '''
       Запуск обучения моделей
@@ -288,41 +270,29 @@ def run_model(pcs_CMIP6_1, vsl_1000_pc,
       '''
 
       # create scaler
-      scaler = StandardScaler()
-      scaler_t = StandardScaler()
       scaler_vsl_1000 = StandardScaler()
       scaler_t_vsl_1000 = StandardScaler()
 
-      # fit and transform in one step
-
-      normalized_vsl_1000 = scaler_vsl_1000.fit_transform(pcs_CMIP6_1) #pcs_CMIP6_1
-      vsl_1000_pc_normalized = scaler_t_vsl_1000.fit_transform(vsl_1000_pc) #vsl_1000_pc
-
-      target = normalized_vsl_1000
-      n_inputs = vsl_1000_pc_normalized.shape[1]
+      # fit and transform 
+      target_tr = scaler_vsl_1000.fit_transform(pcs_tr)
+      vsl_1000_pc_norm_tr = scaler_t_vsl_1000.fit_transform(vsl_1000_pc_tr)
+      vsl_1000_pc_norm_test = scaler_t_vsl_1000.transform(vsl_1000_pc_test)
+      n_inputs = vsl_1000_pc_norm_tr.shape
 
       if type_m=='NN':
-        model = get_model_regression_1(n_inputs,
-                                      n_outputs = pcs_CMIP6_1.shape[1],
+        model = get_model_regression_1(n_inputs[1],
+                                      n_outputs = pcs_tr.shape[1],
                                       use_drop = True,
-                                      use_batch_norm = True)
-
-        tr_t, tr_l, te_t, te_l = train_and_test(vsl_1000_pc_normalized, target, 0.2, keep_order=False, m_mask=m_mask
-                                                )
-
-        '''model, history = simp_net_regression_1(tr_t, tr_l, 
-                                              'test', model, 
+                                      use_batch_norm = False)
+        model, history = simp_net_regression_1(vsl_1000_pc_norm_tr, 
+                                               target_tr, 
+                                              'test', 
+                                               model, 
                                               shuffle_b=True,
-                                              evfs = evfs_CMIP6_1, 
-                                              use_w=use_w)'''
-
-        model, history = simp_net_regression_1(tr_t, tr_l, 
-                                              'test', model, 
-                                              shuffle_b=True,
-                                              evfs = evfs_CMIP6_1, 
-                                              eofs = eofs_CMIP6_1, 
-                                              eigvals = eigvals_CMIP6_1, 
-                                              pca = pca_CMIP6_1,
+                                              evfs = evfs_tr, 
+                                              eofs = eofs_tr, 
+                                              eigvals = eigvals_tr, 
+                                              pca = pca_tr_v,
                                               use_w=use_w)
         
         plt.figure(figsize = (19,10))
@@ -331,40 +301,64 @@ def run_model(pcs_CMIP6_1, vsl_1000_pc,
         plt.legend(['loss', 'val_loss'], loc='upper left')
         plt.show()
         
-
-        score = model.evaluate(te_t, te_l, verbose=0)
+        '''score = model.evaluate(te_t, te_l, verbose=0)
         print(score)
-        inverse_te_l = scaler_vsl_1000.inverse_transform(te_l)
-        est = model.predict(te_t)
+        inverse_te_l = scaler_vsl_1000.inverse_transform(te_l)'''
+        est = model.predict(vsl_1000_pc_norm_test)
         inverse_est = scaler_vsl_1000.inverse_transform(est)
 
       
       elif type_m=='lm':
-        tr_t, tr_l, te_t, te_l = train_and_test(vsl_1000_pc_normalized, target, 0.2, keep_order=False, m_mask=m_mask)
-        model_0 = sm.OLS(tr_l,tr_t)
-
+        '''tr_t, tr_l, te_t, te_l = train_and_test(vsl_1000_pc_norm_tr, target_tr, 0.2, 
+                                                keep_order=False, m_mask=m_mask)'''
+        model_0 = sm.OLS(target_tr, vsl_1000_pc_norm_tr)
         model = model_0.fit()
 
-        inverse_te_l = scaler_vsl_1000.inverse_transform(te_l)
-        est = model.predict(te_t)
+        #inverse_te_l = scaler_vsl_1000.inverse_transform(te_l)
+        est = model.predict(vsl_1000_pc_norm_test)
         inverse_est = scaler_vsl_1000.inverse_transform(est)
 
       elif type_m=='RNN':
-        trsgi_values, y = make_x_y(1, vsl_1000_pc_normalized)
+        
+        trsgi_values0, y = make_x_y(1, vsl_1000_pc_norm_tr)
+        inp_shp = trsgi_values0.shape
+        #inp_shp = vsl_1000_pc_norm_tr.shape
+        #trsgi_values = np.reshape(trsgi_values, (trsgi_values.shape[0],1,trsgi_values.shape[1]))
 
-        inp_shp = trsgi_values.shape
+        '''model = get_model_regression_RNN(inp_shp[1],
+                                      n_outputs = pcs_tr.shape[1],
+                                      use_drop = True,
+                                      use_batch_norm = True,
+                                      inp_shp = inp_shp)
+        
+        
+        model, history = simp_net_regression_1(vsl_1000_pc_norm_tr, 
+                                               target_tr, 
+                                              'test', 
+                                               model, 
+                                              shuffle_b=False,
+                                              evfs = evfs_tr, 
+                                              eofs = eofs_tr, 
+                                              eigvals = eigvals_tr, 
+                                              pca = pca_tr_v,
+                                              use_w=use_w)'''
 
         model = get_model_regression_1(inp_shp[1],
-                                      n_outputs = target.shape[1],
+                                      n_outputs = pcs_tr.shape[1],
                                       use_drop = True,
-                                      use_batch_norm = True)
-                    
-        tr_t, tr_l, te_t, te_l = train_and_test(vsl_1000_pc_normalized, normalized_vsl_1000, 0.2, keep_order=True, m_mask=m_mask)
+                                      use_batch_norm = False)
+        model, history = simp_net_regression_1(vsl_1000_pc_norm_tr, 
+                                               target_tr, 
+                                              'test', 
+                                               model, 
+                                              shuffle_b=False,
+                                              evfs = evfs_tr, 
+                                              eofs = eofs_tr, 
+                                              eigvals = eigvals_tr, 
+                                              pca = pca_tr_v,
+                                              use_w=use_w)
+        
 
-        model, history = simp_net_regression_1(tr_t, tr_l, 
-                                              'test', model, shuffle_b = False,
-                                              use_w=use_w,
-                                              evfs = evfs_CMIP6_1, min_delta = 0.01)
         
         plt.figure(figsize = (19,10))
         plt.plot(history.history['loss'])
@@ -372,14 +366,15 @@ def run_model(pcs_CMIP6_1, vsl_1000_pc,
         plt.legend(['loss', 'val_loss'], loc='upper left')
         plt.show()
         
-        te_t, y = make_x_y(1, te_t)
-        inverse_te_l = scaler_vsl_1000.inverse_transform(te_l)[1:]
+        te_t, y = make_x_y(1, vsl_1000_pc_norm_test)
+        #te_t = vsl_1000_pc_norm_test
+        #te_t = np.reshape(te_t, (te_t.shape[0],1,te_t.shape[1]))
         est = model.predict(te_t)
+        #est = est[:,0,:]
         inverse_est = scaler_vsl_1000.inverse_transform(est)
 
       '''elif type_m=='RNN':
         trsgi_values, y = make_x_y(1, vsl_1000_pc_normalized)
-
         inp_shp = trsgi_values.shape
         model = get_model_regression_RNN(inp_shp[1],
                                         n_outputs = target.shape[1],
@@ -389,7 +384,6 @@ def run_model(pcs_CMIP6_1, vsl_1000_pc,
                     
         tr_t, tr_l, te_t, te_l = train_and_test(vsl_1000_pc_normalized, normalized_vsl_1000, 0.2, keep_order=True, m_mask=m_mask)
         #tr_t, tr_l, te_t, te_l = train_and_test(trsgi_values[:,0,:], normalized_vsl_1000, 0.2, keep_order=True, m_mask=m_mask)
-
         model, history = simp_net_regression_1(tr_t, tr_l, 
                                               'test', model, shuffle_b = False,
                                               use_w=use_w,
@@ -406,11 +400,46 @@ def run_model(pcs_CMIP6_1, vsl_1000_pc,
         est = model.predict(te_t)
         inverse_est = scaler_vsl_1000.inverse_transform(est[:,0,:])'''
 
-      return inverse_te_l, inverse_est
+      return inverse_est
+
+def get_model_regression_RNN(n_inputs, 
+                             n_outputs = 1, 
+                             use_drop = False, 
+                             use_batch_norm = False,
+                             inp_shp=None):
+
+  '''
+  Описание рекурсивной сети для задачи регрессии
+  n_inputs - число предикторов,
+  n_outputs - количество предсказываемых значений, по умоляанию 1
+  use_drop - параметр, отвечающий за рандомное отключение доли нейронов
+  use_batch_norm - параметр, отвечающий за использование batch-нормализации,
+  inp_shp - размаер входных данных
+  '''
+
+
+  model = Sequential()
+  model.add(tf.keras.layers.SimpleRNN(100, return_sequences=True, 
+                                      input_shape=(1, n_inputs), activation='linear'))
 
 
 
-def rev_diff(y_pred, y_true, eofs, eigvals, pca, ds_n, ttl, p_type='diff', scale_type = 2, orig_pcs = False):
+  '''rnn_l = tf.keras.layers.SimpleRNN(50, input_shape=(inp_shp[0], inp_shp[1]), recurrent_dropout=0.1, 
+                           return_sequences=True)'''
+  '''lstm = keras.layers.LSTM(50, input_shape=(inp_shp[1], inp_shp[2]), recurrent_dropout=0.1, 
+                           return_sequences=True)'''
+
+  #model.add(rnn_l)
+  '''if use_batch_norm == True:
+    model.add(BatchNormalization())'''
+  if use_drop == True:
+    model.add(Dropout(0.50))
+
+  model.add(keras.layers.TimeDistributed(Dense(n_outputs)))
+
+  return model
+
+def rev_diff(y_pred, y_true, eofs, eigvals, pca, for_shape, ttl, p_type='diff', scale_type = 2, orig_pcs = True):
        
         '''
         Visual assessment of prediction results:
@@ -523,9 +552,9 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, ds_n, ttl, p_type='diff', scale
           vmin = 0
           vmax = 1
 
-        new = np.reshape(loss0, (-1, ds_n.shape[2]))
+        new = np.reshape(loss0, (-1, for_shape))
         plt.figure(figsize = (19,10))
-        im = plt.imshow(new[::-1], interpolation='none',
+        im = plt.imshow(new, interpolation='none',
                         vmin=vmin, vmax=vmax,cmap='jet')
 
         cbar = plt.colorbar(im,
@@ -542,91 +571,90 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, ds_n, ttl, p_type='diff', scale
       
       
       
-def plot_model(vsl_1000_pc, t_df, scpdsi_pcs_CMIP6_1_v,
-                   scpdsi_evfs_CMIP6_1_v, scpdsi_eofs_CMIP6_1_v, 
-                   scpdsi_eigvals_CMIP6_1_v, scpdsi_pca_CMIP6_1_v,
-                   scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1,
-                   use_w,
-                   ttl, p_type = 'corr',
+def plot_model(vsl_1000_pc_tr, 
+               vsl_1000_pc_test,
+               t_df_tr,
+               t_df_test, 
+               pcs_tr,
+               evfs_tr, 
+               eofs_tr, 
+               eigvals_tr, 
+               pca_tr_v,
+               pca_tr, 
+               eofs_test,
+               pcs_test,
+               for_shape,
+               use_w,
+               ttl, 
+               p_type = 'corr',
                type_model = 'NN'):
   
-    p_v = 0.2
-    nums = np.ones(len(vsl_1000_pc))
-    nums[:int(len(vsl_1000_pc)*p_v)] = 0
-
-    if type_model != 'RNN':
-      np.random.shuffle(nums)
-    mask = 1 == nums
-    m_mask = np.array(mask)
-
     print('\n' + ttl + '\n')
-    inverse_te_l, inverse_est = run_model(scpdsi_pcs_CMIP6_1_v, vsl_1000_pc, 
-                                          scpdsi_evfs_CMIP6_1_v, scpdsi_eofs_CMIP6_1_v, 
-                                          scpdsi_eigvals_CMIP6_1_v, 
-                                          scpdsi_pca_CMIP6_1_v, 
+    inverse_est = run_model(vsl_1000_pc_tr, 
+                            vsl_1000_pc_test,
+                            pcs_tr, 
+                            evfs_tr, 
+                                          eofs_tr, 
+                                          eigvals_tr, 
+                                          pca_tr_v, 
                                           2, 
                                           type_model, 
-                                          use_w=use_w, 
-                                          m_mask=m_mask)
+                                          use_w=use_w)
+    
 
-    inv_rotmat = np.linalg.inv(scpdsi_pca_CMIP6_1_v.rotmat_)
-    unord = inverse_est[:,np.argsort(scpdsi_pca_CMIP6_1_v.order.ravel())]
-    unord_eofs = scpdsi_eofs_CMIP6_1_v.to_numpy()[np.argsort(scpdsi_pca_CMIP6_1_v.order.ravel())]
-    unord_eigvals = scpdsi_eigvals_CMIP6_1_v[np.argsort(scpdsi_pca_CMIP6_1_v.order.ravel())]
+    inv_rotmat = np.linalg.inv(pca_tr_v.rotmat_)
+    unord = inverse_est[:,np.argsort(pca_tr_v.order.ravel())]
+    unord_eofs = eofs_tr.to_numpy()[np.argsort(pca_tr_v.order.ravel())]
+    unord_eigvals = eigvals_tr[np.argsort(pca_tr_v.order.ravel())]
 
     if type_model == 'RNN':
-      loss0 = rev_diff(np.dot(unord,inv_rotmat), t_df.to_numpy()[~m_mask][1:], 
+      loss0 = rev_diff(np.dot(unord,inv_rotmat), 
+                      t_df_test.to_numpy()[1:], 
                       np.dot(unord_eofs.T,inv_rotmat).T, 
                       unord_eigvals, 
-                      scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1, 
+                      pca_tr, 
+                      for_shape, 
                       ttl + "\n", 
                       p_type = p_type,
                       scale_type = 2,
                       orig_pcs=True)
     else:
-      loss0 = rev_diff(np.dot(unord,inv_rotmat), t_df.to_numpy()[~m_mask], 
+      loss0 = rev_diff(np.dot(unord,inv_rotmat), 
+                      t_df_test.to_numpy(), 
                       np.dot(unord_eofs.T,inv_rotmat).T, 
                       unord_eigvals, 
-                      scpdsi_pca_CMIP6_1, ds_n_summer_CMIP6_1, 
+                      pca_tr, 
+                      for_shape, 
                       ttl + "\n", 
                       p_type = p_type,
                       scale_type = 2,
                       orig_pcs=True)
 
-    plt.figure(figsize = (19,10))
-    plt.plot(inverse_te_l[:,0][1:],label='True')
-    plt.plot(inverse_est[:,0][1:],label='est')
-    plt.legend()
-    plt.suptitle('Реальные и предсказанные значения первой компоненты')
-    plt.show()
 
-
-
-def get_model_regression_RNN(n_inputs, n_outputs = 1, use_drop = False, use_batch_norm = False,
-                             inp_shp=None):
+def get_model_regression_1(n_inputs, n_outputs, use_drop = False, use_batch_norm = False):
 
   '''
-  Описание рекурсивной сети для задачи регрессии
+  Описание сети для задачи регрессии
   n_inputs - число предикторов,
   n_outputs - количество предсказываемых значений, по умоляанию 1
   use_drop - параметр, отвечающий за рандомное отключение доли нейронов (30%)
-  use_batch_norm - параметр, отвечающий за использование batch-нормализации,
-  inp_shp - размаер входных данных
+  use_batch_norm - параметр, отвечающий за использование batch-нормализации
   '''
 
-
   model = Sequential()
-  rnn_l = tf.keras.layers.SimpleRNN(50, input_shape=n_inputs, recurrent_dropout=0.1, 
-                           return_sequences=True)
-  '''lstm = keras.layers.LSTM(50, input_shape=(inp_shp[1], inp_shp[2]), recurrent_dropout=0.1, 
-                           return_sequences=True)'''
+  dr_v = 0.4
 
-  model.add(rnn_l)
-  '''if use_batch_norm == True:
-    model.add(BatchNormalization())'''
+  model.add(Dense(300, input_dim=n_inputs, kernel_initializer='normal', activation='linear'))
+  if use_batch_norm == True:
+    model.add(BatchNormalization())
   if use_drop == True:
-    model.add(Dropout(0.20))
+    model.add(Dropout(dr_v))
 
-  model.add(keras.layers.TimeDistributed(Dense(n_outputs)))
+  '''model.add(Dense(100, input_dim=n_inputs, kernel_initializer='normal', activation='linear'))
+  model.add(Dense(100, input_dim=n_inputs, kernel_initializer='normal', activation='linear'))'''
+  '''if use_drop == True:
+    model.add(Dropout(dr_v))'''
 
+  
+  model.add(Dense(n_outputs, kernel_initializer='he_uniform'))
   return model
