@@ -240,6 +240,9 @@ def nse(targets,predictions):
 
 def d_index(targets,predictions):
     return 1-(np.sum((targets-predictions)**2)/np.sum((np.abs(predictions-np.mean(targets))+np.abs(targets-np.mean(targets)))**2))
+  
+def CE(targets,predictions):
+  return 1 - np.sum((targets-predictions)**2) / np.sum((targets-np.mean(targets))**2)
     
 
 
@@ -551,7 +554,25 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, for_shape, ttl, p_type='diff', 
           ttl_str = '; d-index = '
           vmin = 0
           vmax = 1
+        
+        elif p_type == 'CE':
+          nse_ar = []
+          for i in range(u0.shape[1]):
+            i1 = u[:,i]
+            i0 = u0[:,i]
+            if ~np.isnan(i0[0]):
+              i0 = i0[~np.isnan(i1)]
+              i1 = i1[~np.isnan(i1)]
+              nse2 = CE(i0,i1)
+              nse_ar.append(nse2)
+            else:
+              nse_ar.append(np.nan)
 
+          loss0 = np.array(nse_ar)
+          ttl_str = '; CE = '
+          vmin = -1
+          vmax = 1
+          
         new = np.reshape(loss0, (-1, for_shape))
         plt.figure(figsize = (19,10))
         im = plt.imshow(new, interpolation='none',
@@ -751,6 +772,26 @@ def rev_diff_m(y_pred, y_true, ttl, p_type='diff'):
           ttl_str = '; d-index = '
           vmin = 0
           vmax = 1
+          
+        elif p_type == 'CE':
+          nse_ar = []
+          for i in range(u0.shape[1]):
+            i1 = u[:,i]
+            i0 = u0[:,i]
+            if ~np.isnan(i0[0]):
+              i0 = i0[~np.isnan(i1)]
+              i1 = i1[~np.isnan(i1)]
+              nse2 = CE(i0,i1)
+              nse_ar.append(nse2)
+            else:
+              nse_ar.append(np.nan)
+
+          loss0 = np.array(nse_ar)
+          ttl_str = '; CE = '
+          vmin = -1
+          vmax = 1
+          
+        
 
         new = np.reshape(loss0, (-1, y_pred.shape[2]))
         plt.figure(figsize = (19,10))
