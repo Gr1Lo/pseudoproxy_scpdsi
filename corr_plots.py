@@ -207,7 +207,6 @@ def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'
                 merge_df = df1.merge(df2, left_on='year', right_on='year')
 
               #рандомные значения шума разного цвета
-              print(len(merge_df[var_name].values))
               wn = cn.powerlaw_psd_gaussian(0, len(merge_df[var_name].values))
               va_std = np.std(merge_df[var_name].values)
 
