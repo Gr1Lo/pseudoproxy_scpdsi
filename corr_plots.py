@@ -196,38 +196,42 @@ def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'
 
             df1 = grid_df[(grid_df.lat == lats[lat_ind]) & (grid_df.lon == lons[lon_ind])]
 
-            if grid_df2 is None:
-              df0 = pd.DataFrame(columns = ['trsgi',
-                    'ages'], data = np.array([real_trsgi, real_ages]).T)
-              merge_df = df1.merge(df0, left_on='year', right_on='ages')
-            else:
-              df2 = grid_df2[(grid_df2.lat == lats[lat_ind]) & (grid_df2.lon == lons[lon_ind])]
-              merge_df = df1.merge(df2, left_on='year', right_on='year')
+            #???????
+            if len(df1)>0:
+              if grid_df2 is None:
+                df0 = pd.DataFrame(columns = ['trsgi',
+                      'ages'], data = np.array([real_trsgi, real_ages]).T)
+                merge_df = df1.merge(df0, left_on='year', right_on='ages')
+              else:
+                df2 = grid_df2[(grid_df2.lat == lats[lat_ind]) & (grid_df2.lon == lons[lon_ind])]
+                merge_df = df1.merge(df2, left_on='year', right_on='year')
 
-            #рандомные значения шума разного цвета
-            wn = cn.powerlaw_psd_gaussian(0, len(merge_df[var_name].values))
-            va_std = np.std(merge_df[var_name].values)
+              #рандомные значения шума разного цвета
+              print(len(merge_df[var_name].values))
+              wn = cn.powerlaw_psd_gaussian(0, len(merge_df[var_name].values))
+              va_std = np.std(merge_df[var_name].values)
 
 
-            if corr is None:
-              pseudo_p = merge_df['trsgi'].values
-            else:
-              #стандартизация по snr по аналогии с Feng Zhu
-              snr = np.abs(corr)/((1-corr**2)**0.5) 
-              noise_std = va_std/snr
-              wn_snr = noise_std * wn
-              pseudo_p = merge_df[var_name].values + wn_snr
+              if corr is None:
+                pseudo_p = merge_df['trsgi'].values
+              else:
+                #стандартизация по snr по аналогии с Feng Zhu
+                snr = np.abs(corr)/((1-corr**2)**0.5) 
+                noise_std = va_std/snr
+                wn_snr = noise_std * wn
+                pseudo_p = merge_df[var_name].values + wn_snr
 
-            if grid_df2 is None:
-              corr_s = scipy.stats.spearmanr(merge_df[var_name].values,pseudo_p)[0]
-            else:
-              corr_s = scipy.stats.spearmanr(merge_df[var_name2].values,pseudo_p)[0]
+              if grid_df2 is None:
+                corr_s = scipy.stats.spearmanr(merge_df[var_name].values,pseudo_p)[0]
+              else:
+                corr_s = scipy.stats.spearmanr(merge_df[var_name2].values,pseudo_p)[0]
 
-            if ~np.isnan(corr_s):
-              pseudo_p_arr.append(pseudo_p)
+              if ~np.isnan(corr_s):
+                pseudo_p_arr.append(pseudo_p)
 
-            if ~np.isnan(corr_s) & (np.isnan(a[lat_ind,lon_ind]) or a[lat_ind,lon_ind] < corr_s):
-              a[lat_ind,lon_ind]=corr_s
+              if ~np.isnan(corr_s) & (np.isnan(a[lat_ind,lon_ind]) or a[lat_ind,lon_ind] < corr_s):
+                a[lat_ind,lon_ind]=corr_s
+
 
     if corr is not None:
           ttl = ttl + '\n(corr = ' + str(corr) + ')'
@@ -241,4 +245,3 @@ def plot_corr(new_df, lons, lats, grid_df, ttl, corr = None, var_name = 'scpdsi'
     fig.suptitle(ttl, fontsize=25)
 
     return np.array(pseudo_p_arr)
-  
