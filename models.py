@@ -163,7 +163,7 @@ def corr_loss(x, y):
 
 def simp_net_regression_1(trsgi_values, resp, ttl, model, shuffle_b, evfs = None, 
                           eofs = None, eigvals = None, pca = None, scale_type=2,
-                          use_w=False, min_delta = 0.001):
+                          use_w=False, min_delta = 0.0005):
 
     '''
     Запуск обучения модели регрессии
@@ -195,6 +195,7 @@ def simp_net_regression_1(trsgi_values, resp, ttl, model, shuffle_b, evfs = None
                                               l_pca = pca, 
                                               scale_type=scale_type))
     elif use_w=='corr':
+      min_delta = 0.05
       model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0005),
                   run_eagerly=True,
                   loss = corr_loss)
@@ -212,7 +213,7 @@ def simp_net_regression_1(trsgi_values, resp, ttl, model, shuffle_b, evfs = None
     else:
       trsgi_values, y = make_x_y(1, trsgi_values)
       #trsgi_values = np.reshape(trsgi_values, (trsgi_values.shape[0],1,trsgi_values.shape[1]))
-      callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, min_delta=0.001)
+      callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, min_delta=min_delta)
       v_s = 0.2
       all_arr = all_arr[1:]
 
@@ -242,6 +243,8 @@ def d_index(targets,predictions):
     return 1-(np.sum((targets-predictions)**2)/np.sum((np.abs(predictions-np.mean(targets))+np.abs(targets-np.mean(targets)))**2))
   
 def CE(targets,predictions):
+  '''print(targets)
+  print(predictions)'''
   return 1 - np.sum((targets-predictions)**2) / np.sum((targets-np.mean(targets))**2)
     
 
@@ -304,25 +307,18 @@ def run_model(vsl_1000_pc_tr,
         plt.legend(['loss', 'val_loss'], loc='upper left')
         plt.show()
         
-        '''score = model.evaluate(te_t, te_l, verbose=0)
-        print(score)
-        inverse_te_l = scaler_vsl_1000.inverse_transform(te_l)'''
+        #score = model.evaluate(te_t, te_l, verbose=0)
         est = model.predict(vsl_1000_pc_norm_test)
         inverse_est = scaler_vsl_1000.inverse_transform(est)
 
       
       elif type_m=='lm':
-        '''tr_t, tr_l, te_t, te_l = train_and_test(vsl_1000_pc_norm_tr, target_tr, 0.2, 
-                                                keep_order=False, m_mask=m_mask)'''
         model_0 = sm.OLS(target_tr, vsl_1000_pc_norm_tr)
         model = model_0.fit()
-
-        #inverse_te_l = scaler_vsl_1000.inverse_transform(te_l)
         est = model.predict(vsl_1000_pc_norm_test)
         inverse_est = scaler_vsl_1000.inverse_transform(est)
 
       elif type_m=='RNN':
-        
         trsgi_values0, y = make_x_y(1, vsl_1000_pc_norm_tr)
         inp_shp = trsgi_values0.shape
         #inp_shp = vsl_1000_pc_norm_tr.shape
@@ -491,6 +487,15 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, for_shape, ttl, p_type='diff', 
           Yhat0 = pca._scaler.inverse_transform(Yhat0)
           u0 = Yhat0
 
+        '''#####
+        scaler_0 = StandardScaler()
+        scaler_1 = StandardScaler()
+        # fit and transform 
+        u_ = scaler_0.fit_transform(u0)
+        u = scaler_1.fit_transform(u)
+        u = scaler_0.inverse_transform(u)
+        #####'''
+
         if p_type=='corr':
           coor_ar = []
           for i in range(u0.shape[1]):
@@ -611,6 +616,22 @@ def plot_model(vsl_1000_pc_tr,
                type_model = 'NN'):
   
     print('\n' + ttl + '\n')
+    '''inverse_est = run_model(vsl_1000_pc_tr, 
+                            vsl_1000_pc_test,
+                            pcs_tr, 
+                            evfs_tr, 
+                                          eofs_tr, 
+                                          eigvals_tr, 
+                                          pca_tr_v, 
+                                          2, 
+                                          type_model, 
+                                          use_w=use_w)
+    
+    inv_rotmat = np.linalg.inv(pca_tr_v.rotmat_)
+    unord = inverse_est[:,np.argsort(pca_tr_v.order.ravel())]
+    unord_eofs = eofs_tr.to_numpy()[np.argsort(pca_tr_v.order.ravel())]
+    unord_eigvals = eigvals_tr[np.argsort(pca_tr_v.order.ravel())]'''
+
     inverse_est = run_model(vsl_1000_pc_tr, 
                             vsl_1000_pc_test,
                             pcs_tr, 
@@ -622,12 +643,6 @@ def plot_model(vsl_1000_pc_tr,
                                           type_model, 
                                           use_w=use_w)
     
-
-    inv_rotmat = np.linalg.inv(pca_tr_v.rotmat_)
-    unord = inverse_est[:,np.argsort(pca_tr_v.order.ravel())]
-    unord_eofs = eofs_tr.to_numpy()[np.argsort(pca_tr_v.order.ravel())]
-    unord_eigvals = eigvals_tr[np.argsort(pca_tr_v.order.ravel())]
-
     if type_model == 'RNN':
       loss0 = rev_diff(np.dot(unord,inv_rotmat), 
                       t_df_test.to_numpy()[1:], 
@@ -640,10 +655,20 @@ def plot_model(vsl_1000_pc_tr,
                       scale_type = 2,
                       orig_pcs=True)
     else:
-      loss0 = rev_diff(np.dot(unord,inv_rotmat), 
+      '''loss0 = rev_diff(np.dot(unord,inv_rotmat), 
                       t_df_test.to_numpy(), 
                       np.dot(unord_eofs.T,inv_rotmat).T, 
                       unord_eigvals, 
+                      pca_tr, 
+                      for_shape, 
+                      ttl + "\n", 
+                      p_type = p_type,
+                      scale_type = 2,
+                      orig_pcs=True)'''
+      loss0 = rev_diff(inverse_est, 
+                      t_df_test.to_numpy(), 
+                      eofs_tr, 
+                      eigvals_tr, 
                       pca_tr, 
                       for_shape, 
                       ttl + "\n", 
@@ -663,7 +688,7 @@ def get_model_regression_1(n_inputs, n_outputs, use_drop = False, use_batch_norm
   '''
 
   model = Sequential()
-  dr_v = 0.4
+  dr_v = 0.5
 
   model.add(Dense(300, input_dim=n_inputs, kernel_initializer='normal', activation='linear'))
   if use_batch_norm == True:
@@ -672,8 +697,7 @@ def get_model_regression_1(n_inputs, n_outputs, use_drop = False, use_batch_norm
     model.add(Dropout(dr_v))
 
   '''model.add(Dense(100, input_dim=n_inputs, kernel_initializer='normal', activation='linear'))
-  model.add(Dense(100, input_dim=n_inputs, kernel_initializer='normal', activation='linear'))'''
-  '''if use_drop == True:
+  if use_drop == True:
     model.add(Dropout(dr_v))'''
 
   
