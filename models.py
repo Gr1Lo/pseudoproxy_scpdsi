@@ -839,3 +839,74 @@ def rev_diff_m(y_pred, y_true, ttl, p_type='diff', mask_y = None):
         plt.show()
 
         return loss0
+
+      
+def table_rev_diff_m(y_true, sup_t,
+                    y_pred_eppr, ttl_eppr, 
+                    y_pred_lm_EOF, ttl_lm_EOF, 
+                    y_pred_ann_EOF, ttl_ann_EOF, 
+                    y_pred_plsr, ttl_plsr,
+                    p_type='CE', mask_y = None):
+       
+        u0 = np.reshape(y_true, (y_true.shape[0],-1))
+        if mask_y is not None:
+          u_m = np.reshape(mask_y, (mask_y.shape[0],-1))
+          u0 = np.where(np.isnan(mask_y), np.nan, u0)
+
+        all_i = []
+        arr_loss = []
+        for y_pred in [y_pred_eppr, y_pred_lm_EOF, y_pred_ann_EOF, y_pred_plsr]:
+          u = np.reshape(y_pred, (y_pred.shape[0],-1))
+          if p_type == 'CE':
+            nse_ar = []
+            for i in range(u0.shape[1]):
+              i1 = u[:,i]
+              i0 = u0[:,i]
+              if ~np.isnan(i0[0]):
+                i0 = i0[~np.isnan(i1)]
+                i1 = i1[~np.isnan(i1)]
+                nse2 = CE(i0,i1)
+                nse_ar.append(nse2)
+              else:
+                nse_ar.append(np.nan)
+
+            loss0 = np.array(nse_ar)
+            ttl_str = '; CE = '
+            vmin = -1
+            vmax = 1
+
+          new = np.reshape(loss0, (-1, y_pred.shape[2]))
+          new = new[:, 29:90]
+          all_i.append(new)
+          arr_loss.append(loss0)
+
+        f, axarr = plt.subplots(2,2, figsize=(9, 10))
+        im = axarr[0,0].imshow(all_i[0], interpolation='none',
+                        vmin=vmin, vmax=vmax, cmap='jet')
+        im = axarr[0,1].imshow(all_i[1], interpolation='none',
+                        vmin=vmin, vmax=vmax, cmap='jet')
+        im = axarr[1,0].imshow(all_i[2], interpolation='none',
+                        vmin=vmin, vmax=vmax, cmap='jet')
+        im = axarr[1,1].imshow(all_i[3], interpolation='none',
+                        vmin=vmin, vmax=vmax, cmap='jet')
+        
+        axarr[0,0].axis('off')
+        axarr[0,0].set_title(ttl_eppr + ttl_str + str(round(np.nanmean(arr_loss[0]),3)), fontsize=15)
+        axarr[0,1].axis('off')
+        axarr[0,1].set_title(ttl_lm_EOF + ttl_str + str(round(np.nanmean(arr_loss[3]),3)), fontsize=15)
+        axarr[1,0].axis('off')
+        axarr[1,0].set_title(ttl_ann_EOF + ttl_str + str(round(np.nanmean(arr_loss[2]),3)), fontsize=15)
+        axarr[1,1].axis('off')
+        axarr[1,1].set_title(ttl_plsr + ttl_str + str(round(np.nanmean(arr_loss[3]),3)), fontsize=15)
+        plt.tight_layout()
+
+        f.subplots_adjust(right=0.8)
+        cbar_ax = f.add_axes([0.85, 0.05, 0.05, 0.88])
+        cbar = f.colorbar(im, orientation='vertical', cax=cbar_ax)
+
+        f.subplots_adjust(top=0.9)
+        f.suptitle(sup_t, fontsize=20)
+
+        plt.show()
+
+        return loss0
