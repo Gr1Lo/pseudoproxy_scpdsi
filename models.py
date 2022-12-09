@@ -896,7 +896,7 @@ def table_rev_diff_m(y_true, sup_t,
         axarr[0,0].axis('off')
         axarr[0,0].set_title(ttl_eppr + ttl_str + str(round(np.nanmean(arr_loss[0]),3)), fontsize=15)
         axarr[0,1].axis('off')
-        axarr[0,1].set_title(ttl_lm_EOF + ttl_str + str(round(np.nanmean(arr_loss[3]),3)), fontsize=15)
+        axarr[0,1].set_title(ttl_lm_EOF + ttl_str + str(round(np.nanmean(arr_loss[1]),3)), fontsize=15)
         axarr[1,0].axis('off')
         axarr[1,0].set_title(ttl_ann_EOF + ttl_str + str(round(np.nanmean(arr_loss[2]),3)), fontsize=15)
         axarr[1,1].axis('off')
