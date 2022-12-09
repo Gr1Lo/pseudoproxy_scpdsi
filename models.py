@@ -593,7 +593,7 @@ def rev_diff(y_pred, y_true, eofs, eigvals, pca, for_shape, ttl, p_type='diff', 
         plt.title(ttl + ttl_str + str(round(loss0,3)),fontsize=20)
         plt.show()
 
-        return loss0
+        return loss0, Yhat
       
       
       
@@ -644,7 +644,7 @@ def plot_model(vsl_1000_pc_tr,
                                           use_w=use_w)
     
     if type_model == 'RNN':
-      loss0 = rev_diff(np.dot(unord,inv_rotmat), 
+      loss0, Yhat = rev_diff(np.dot(unord,inv_rotmat), 
                       t_df_test.to_numpy()[1:], 
                       np.dot(unord_eofs.T,inv_rotmat).T, 
                       unord_eigvals, 
@@ -665,7 +665,7 @@ def plot_model(vsl_1000_pc_tr,
                       p_type = p_type,
                       scale_type = 2,
                       orig_pcs=True)'''
-      loss0 = rev_diff(inverse_est, 
+      loss0, Yhat = rev_diff(inverse_est, 
                       t_df_test.to_numpy(), 
                       eofs_tr, 
                       eigvals_tr, 
@@ -675,6 +675,8 @@ def plot_model(vsl_1000_pc_tr,
                       p_type = p_type,
                       scale_type = 2,
                       orig_pcs=True)
+      
+    return Yhat
 
 
 def get_model_regression_1(n_inputs, n_outputs, use_drop = False, use_batch_norm = False):
@@ -707,7 +709,7 @@ def get_model_regression_1(n_inputs, n_outputs, use_drop = False, use_batch_norm
 
 
 
-def rev_diff_m(y_pred, y_true, ttl, p_type='diff'):
+def rev_diff_m(y_pred, y_true, ttl, p_type='diff', mask_y = None):
        
         """
         Visual assessment of prediction results:
@@ -723,6 +725,9 @@ def rev_diff_m(y_pred, y_true, ttl, p_type='diff'):
 
         u = np.reshape(y_pred, (y_pred.shape[0],-1))
         u0 = np.reshape(y_true, (y_true.shape[0],-1))
+        if mask_y is not None:
+          u_m = np.reshape(mask_y, (mask_y.shape[0],-1))
+          u0 = np.where(np.isnan(mask_y), np.nan, u0)
 
         if p_type=='corr':
           coor_ar = []
@@ -818,6 +823,7 @@ def rev_diff_m(y_pred, y_true, ttl, p_type='diff'):
         
 
         new = np.reshape(loss0, (-1, y_pred.shape[2]))
+        new = new[:, 25:90]
         plt.figure(figsize = (19,10))
         im = plt.imshow(new, interpolation='none',
                         vmin=vmin, vmax=vmax,cmap='jet')
