@@ -855,8 +855,11 @@ def table_rev_diff_m(y_true, sup_t,
 
         all_i = []
         arr_loss = []
+        sha = y_pred_eppr.shape
         for y_pred in [y_pred_eppr, y_pred_lm_EOF, y_pred_ann_EOF, y_pred_plsr]:
-          u = np.reshape(y_pred, (y_pred.shape[0],-1))
+          u = y_pred
+          if len(y_pred.shape)==3:
+            u = np.reshape(y_pred, (y_pred.shape[0],-1))
           if p_type == 'CE':
             nse_ar = []
             for i in range(u0.shape[1]):
@@ -875,7 +878,7 @@ def table_rev_diff_m(y_true, sup_t,
             vmin = -1
             vmax = 1
 
-          new = np.reshape(loss0, (-1, y_pred.shape[2]))
+          new = np.reshape(loss0, (-1, sha[2]))
           new = new[:, 29:90]
           all_i.append(new)
           arr_loss.append(loss0)
