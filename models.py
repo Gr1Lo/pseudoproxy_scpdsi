@@ -643,6 +643,18 @@ def plot_model(vsl_1000_pc_tr,
                                           type_model, 
                                           use_w=use_w)
     
+    inverse_est_tr = run_model(vsl_1000_pc_tr, 
+                            vsl_1000_pc_tr,
+                            pcs_tr, 
+                            evfs_tr, 
+                                          eofs_tr, 
+                                          eigvals_tr, 
+                                          pca_tr_v, 
+                                          2, 
+                                          type_model, 
+                                          use_w=use_w)
+    
+    
     if type_model == 'RNN':
       loss0, Yhat = rev_diff(np.dot(unord,inv_rotmat), 
                       t_df_test.to_numpy()[1:], 
@@ -676,7 +688,18 @@ def plot_model(vsl_1000_pc_tr,
                       scale_type = 2,
                       orig_pcs=True)
       
-    return Yhat
+      loss0_tr, Yhat_tr = rev_diff(inverse_est_tr, 
+                      t_df_tr.to_numpy(), 
+                      eofs_tr, 
+                      eigvals_tr, 
+                      pca_tr, 
+                      for_shape, 
+                      ttl + "\n", 
+                      p_type = p_type,
+                      scale_type = 2,
+                      orig_pcs=True)
+      
+    return Yhat, Yhat_tr
 
 
 def get_model_regression_1(n_inputs, n_outputs, use_drop = False, use_batch_norm = False):
