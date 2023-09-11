@@ -68,7 +68,7 @@ def r_execel(f_path, drop_val = 2):
 
 
 
-def r_netCDF(f_path, var_name = 'scpdsi', min_lon = -1000, min_lat = -1000, max_lon = 1000, max_lat = 1000 swap = 0, force0toNan = False):
+def r_netCDF(f_path, var_name = 'scpdsi', min_lon = -1000, min_lat = -1000, max_lon = 1000, max_lat = 1000, swap = 0, force0toNan = False):
     '''
     Формирование таблицы по годам из netCDF с индексами scpdsi
     '''
